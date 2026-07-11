@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Motor IA</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #d97845; --ok: #4caf7d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; }
+  header .steps { display: flex; gap: 8px; margin-left: auto; font-size: 13px; color: var(--muted); }
+  header .steps span.active { color: var(--accent); font-weight: 600; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  h2 { font-size: 15px; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  textarea, input[type=text], select {
+    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; font: inherit;
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+    padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: 13px; }
+  #files-list { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .spec-field { margin-bottom: 14px; }
+  .spec-field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .spec-field textarea { min-height: 60px; }
+  #log {
+    background: #0a0c10; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; font: 13px/1.5 ui-monospace, monospace; white-space: pre-wrap;
+    max-height: 420px; overflow-y: auto; min-height: 120px;
+  }
+  #log .tool { color: #7fb4e6; }
+  #log .text { color: var(--text); }
+  #log .done { color: var(--ok); font-weight: 600; }
+  #log .err { color: #e66; }
+  .hidden { display: none; }
+  .badge { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); }
+  .warn { border-left: 3px solid var(--accent); padding: 8px 12px; background: rgba(217,120,69,.08); border-radius: 4px; margin-bottom: 12px; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚙️ Motor IA</h1>
+  <div class="steps">
+    <span id="s1" class="active">1. Pedido</span> →
+    <span id="s2">2. Spec</span> →
+    <span id="s3">3. Execução</span>
+  </div>
+</header>
+<main>
+
+  <!-- PASSO 1: pedido -->
+  <section class="panel" id="step1">
+    <h2>Descreva a melhoria</h2>
+    <div class="row" style="margin-top:0;margin-bottom:12px">
+      <label class="muted">Projeto:</label>
+      <select id="project" style="max-width:320px"></select>
+    </div>
+    <textarea id="request" placeholder="Ex.: Quero que a tela de relatórios tenha um filtro por mês e que os totais batam com a planilha anexa. O layout deve seguir o print."></textarea>
+    <div class="row">
+      <input type="file" id="files" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.csv,.xlsx,.xls,.txt,.md,.json" />
+      <button id="btn-structure">Gerar spec →</button>
+      <span class="muted" id="structure-status"></span>
+    </div>
+    <div id="files-list"></div>
+  </section>
+
+  <!-- PASSO 2: spec -->
+  <section class="panel hidden" id="step2">
+    <h2>Revise a spec <span class="badge" id="spec-cost"></span></h2>
+    <div id="spec-questions"></div>
+    <div class="spec-field"><label>Título</label><input type="text" id="f-titulo" /></div>
+    <div class="spec-field"><label>Objetivo</label><textarea id="f-objetivo"></textarea></div>
+    <div class="spec-field"><label>Contexto</label><textarea id="f-contexto"></textarea></div>
+    <div class="spec-field"><label>Mudanças (uma por linha)</label><textarea id="f-mudancas"></textarea></div>
+    <div class="spec-field"><label>Fora do escopo (uma por linha)</label><textarea id="f-fora"></textarea></div>
+    <div class="spec-field"><label>Critérios de aceite (um por linha)</label><textarea id="f-criterios"></textarea></div>
+    <div class="row">
+      <button class="secondary" onclick="goto(1)">← Voltar</button>
+      <button id="btn-execute">Aprovar e executar ▶</button>
+    </div>
+  </section>
+
+  <!-- PASSO 3: execução -->
+  <section class="panel hidden" id="step3">
+    <h2>Execução</h2>
+    <div id="log"></div>
+    <div class="row">
+      <button class="secondary" id="btn-preview" disabled>🖥 Abrir aplicação para testar</button>
+      <button class="secondary" id="btn-new" onclick="resetAll()">＋ Nova melhoria</button>
+    </div>
+    <p class="muted">Testou e quer ajustar? Clique em "Nova melhoria" e descreva o ajuste — o histórico do projeto fica no repositório (git).</p>
+  </section>
+
+</main>
+<script>
+let currentSpec = null;
+let projects = [];
+
+function goto(n) {
+  for (const i of [1, 2, 3]) {
+    document.getElementById('step' + i).classList.toggle('hidden', i !== n);
+    document.getElementById('s' + i).classList.toggle('active', i === n);
+  }
+}
+
+async function loadProjects() {
+  const res = await fetch('/api/projects');
+  projects = (await res.json()).projects;
+  const sel = document.getElementById('project');
+  sel.innerHTML = projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+}
+loadProjects();
+
+document.getElementById('files').addEventListener('change', (e) => {
+  document.getElementById('files-list').textContent =
+    [...e.target.files].map(f => f.name).join(' · ');
+});
+
+document.getElementById('btn-structure').addEventListener('click', async () => {
+  const text = document.getElementById('request').value.trim();
+  if (!text) return alert('Descreva a melhoria primeiro.');
+  const btn = document.getElementById('btn-structure');
+  const status = document.getElementById('structure-status');
+  btn.disabled = true; status.textContent = 'Estruturando…';
+
+  const fd = new FormData();
+  fd.append('text', text);
+  fd.append('projectId', document.getElementById('project').value);
+  for (const f of document.getElementById('files').files) fd.append('files', f);
+
+  try {
+    const res = await fetch('/api/structure', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    currentSpec = data.spec;
+    fillSpec(data.spec);
+    document.getElementById('spec-cost').textContent =
+      `estruturador: ${data.usage.input_tokens}↓ ${data.usage.output_tokens}↑ tokens`;
+    goto(2);
+  } catch (err) {
+    alert('Erro ao estruturar: ' + err.message);
+  } finally {
+    btn.disabled = false; status.textContent = '';
+  }
+});
+
+function fillSpec(s) {
+  document.getElementById('f-titulo').value = s.titulo || '';
+  document.getElementById('f-objetivo').value = s.objetivo || '';
+  document.getElementById('f-contexto').value = s.contexto || '';
+  document.getElementById('f-mudancas').value = (s.mudancas || []).join('\n');
+  document.getElementById('f-fora').value = (s.fora_do_escopo || []).join('\n');
+  document.getElementById('f-criterios').value = (s.criterios_de_aceite || []).join('\n');
+  const q = document.getElementById('spec-questions');
+  q.innerHTML = (s.perguntas_abertas || []).length
+    ? `<div class="warn">⚠️ Perguntas abertas — resolva editando a spec abaixo:<br>• ${s.perguntas_abertas.join('<br>• ')}</div>`
+    : '';
+}
+
+function readSpec() {
+  const lines = id => document.getElementById(id).value.split('\n').map(l => l.trim()).filter(Boolean);
+  return {
+    titulo: document.getElementById('f-titulo').value.trim(),
+    objetivo: document.getElementById('f-objetivo').value.trim(),
+    contexto: document.getElementById('f-contexto').value.trim(),
+    mudancas: lines('f-mudancas'),
+    fora_do_escopo: lines('f-fora'),
+    criterios_de_aceite: lines('f-criterios'),
+    perguntas_abertas: [],
+  };
+}
+
+function logLine(cls, text) {
+  const log = document.getElementById('log');
+  const div = document.createElement('div');
+  div.className = cls; div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+document.getElementById('btn-execute').addEventListener('click', async () => {
+  const spec = readSpec();
+  if (!spec.mudancas.length) return alert('A spec precisa de ao menos uma mudança.');
+  goto(3);
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('btn-preview').disabled = true;
+  logLine('muted', '⏳ Enviando spec para o Claude Code…');
+
+  const res = await fetch('/api/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ spec, projectId: document.getElementById('project').value }),
+  });
+  if (!res.ok) { logLine('err', 'Erro: ' + await res.text()); return; }
+
+  // stream SSE
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx;
+    while ((idx = buf.indexOf('\n\n')) >= 0) {
+      const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2);
+      const line = chunk.split('\n').find(l => l.startsWith('data: '));
+      if (!line) continue;
+      const ev = JSON.parse(line.slice(6));
+      if (ev.type === 'tool') logLine('tool', '🔧 ' + ev.text);
+      else if (ev.type === 'text') logLine('text', ev.text);
+      else if (ev.type === 'done') {
+        logLine('done', `✅ Concluído. Custo: ${ev.cost != null ? '$' + ev.cost.toFixed(4) : 'n/d'} · ${ev.duration ? Math.round(ev.duration / 1000) + 's' : ''}`);
+        document.getElementById('btn-preview').disabled = false;
+      }
+      else if (ev.type === 'error') logLine('err', '❌ ' + ev.text);
+    }
+  }
+});
+
+document.getElementById('btn-preview').addEventListener('click', async () => {
+  const projectId = document.getElementById('project').value;
+  logLine('muted', '🚀 Subindo a aplicação…');
+  const res = await fetch('/api/preview/' + projectId, { method: 'POST' });
+  const data = await res.json();
+  if (data.url) {
+    logLine('done', 'Aplicação disponível em ' + data.url);
+    window.open(data.url, '_blank');
+  } else {
+    logLine('err', data.error || 'Falha ao subir a aplicação.');
+  }
+});
+
+function resetAll() {
+  document.getElementById('request').value = '';
+  document.getElementById('files').value = '';
+  document.getElementById('files-list').textContent = '';
+  currentSpec = null;
+  goto(1);
+}
+</script>
+</body>
+</html>

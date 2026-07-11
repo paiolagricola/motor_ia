@@ -1,0 +1,12 @@
+{
+  "projects": [
+    {
+      "id": "meu-app",
+      "name": "Meu App (exemplo)",
+      "path": "/caminho/absoluto/para/o/repositorio",
+      "notes": "Next.js 14 + Supabase. Tela principal em app/page.tsx.",
+      "devCommand": "npm run dev",
+      "previewUrl": "http://localhost:3000"
+    }
+  ]
+}

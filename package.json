@@ -1,0 +1,22 @@
+{
+  "name": "motor-ia",
+  "version": "0.1.0",
+  "description": "Motor de orquestração: transforma pedidos em linguagem natural (com prints e planilhas) em specs estruturadas e executa via Claude Code, com preview da aplicação.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.207",
+    "@anthropic-ai/sdk": "^0.111.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
+    "xlsx": "^0.18.5"
+  }
+}

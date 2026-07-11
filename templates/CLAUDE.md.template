@@ -1,0 +1,37 @@
+# CLAUDE.md
+
+> Copie este arquivo para a raiz de cada projeto seu e preencha.
+> Um CLAUDE.md bem escrito é a maior economia de tokens que existe:
+> o Claude Code para de redescobrir o projeto a cada sessão.
+
+## O que é este projeto
+
+[1-2 frases: o que a aplicação faz e para quem.]
+
+## Stack
+
+- Frontend: [ex.: Next.js 14, Tailwind]
+- Backend/BD: [ex.: Supabase (Postgres + Auth + Storage)]
+- Deploy: [ex.: Vercel]
+
+## Estrutura
+
+- `app/` — [rotas/telas principais]
+- `components/` — [componentes compartilhados]
+- `lib/supabase.ts` — [cliente do Supabase]
+
+## Comandos
+
+- Rodar em dev: `npm run dev` (porta 3000)
+- Testes: `npm test`
+- Build: `npm run build`
+
+## Convenções
+
+- [ex.: componentes em PascalCase, sem CSS inline, usar shadcn/ui]
+- [ex.: toda query ao banco passa por lib/queries.ts]
+
+## Cuidados
+
+- [ex.: NÃO alterar as migrations em supabase/migrations manualmente]
+- [ex.: variáveis de ambiente ficam em .env.local, nunca commitar]
