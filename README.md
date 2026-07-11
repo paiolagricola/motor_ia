@@ -12,7 +12,20 @@ Motor de orquestração para desenvolver várias aplicações economizando tempo
 
 A economia vem de três lugares: a spec enxuta (o executor não recebe conversa solta nem planilha inteira), o `CLAUDE.md` de cada projeto (o Claude Code não redescobre o projeto a cada sessão) e o cache de prompt automático do Claude Code.
 
-## Começar a usar (4 comandos)
+## Começar a usar SEM terminal (jeito fácil)
+
+1. **Instale o Node.js** (uma vez): https://nodejs.org/pt — botão verde (LTS), avançar até o fim.
+2. **Baixe o motor:** [clique aqui para baixar o ZIP](https://github.com/paiolagricola/motor_ia/archive/refs/heads/claude/system-emulator-claude-chat-yqgcbe.zip) e **extraia** a pasta (botão direito → Extrair tudo).
+3. **Dê dois cliques** no arquivo dentro da pasta:
+   - Windows: `instalar.bat`
+   - Mac: `instalar.command` (se o Mac bloquear: botão direito → Abrir)
+
+O instalador faz o resto: instala as dependências, te guia no login da sua
+assinatura Claude (digite `/login`, siga o navegador, depois `/exit`) e abre o
+painel em http://localhost:4000 sozinho. **Nas próximas vezes**, use o
+`iniciar.bat` / `iniciar.command` — dois cliques e o painel abre.
+
+## Começar a usar pelo terminal (4 comandos)
 
 ```bash
 git clone https://github.com/paiolagricola/motor_ia.git && cd motor_ia
