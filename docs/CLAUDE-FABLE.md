@@ -160,12 +160,22 @@ comportamentos da Parte 2 em instruções que o Opus segue.
 
 ## Parte 5 — Como instalar e usar
 
-**Opção A — global (recomendado):** cole o protocolo em `~/.claude/CLAUDE.md`.
-Vale para todos os projetos, em toda sessão do Claude Code — inclusive nas
-execuções do Motor IA.
+**Opção A — como skill (recomendado, mais econômico):** o protocolo existe como
+skill em `skills/protocolo-fable/`. Uma skill mantém só a descrição (~30 tokens)
+no contexto e carrega o corpo sob demanda — mais barato que colar tudo no
+CLAUDE.md, que fica inteiro no contexto de toda sessão.
 
-**Opção B — por projeto:** cole no final do `CLAUDE.md` de cada repositório
-(o template do Motor IA em `templates/CLAUDE.md.template` já indica onde).
+- **Global (todos os projetos):** `npm run instalar-skill` — copia para
+  `~/.claude/skills/`, valendo em qualquer sessão do Claude Code, dentro ou fora
+  do motor. Você também pode invocá-la manualmente com `/protocolo-fable`.
+- **Por projeto (automático):** `npm run novo-projeto` já instala a skill em
+  `.claude/skills/` de cada projeto cadastrado, e o CLAUDE.md semeado contém uma
+  linha que obriga o executor a usá-la antes de qualquer edição — o gatilho
+  garantido custa uma linha, o corpo só entra no contexto quando a tarefa começa.
+
+**Opção B — direto no CLAUDE.md:** cole o bloco da Parte 4 em
+`~/.claude/CLAUDE.md` (global) ou no CLAUDE.md de cada repositório. Fica sempre
+presente, sem depender de gatilho — ao custo de ~600 tokens em toda sessão.
 
 **Ajustes finos no Claude Code:**
 - Rode com Opus (`/model opus`) para o dia a dia; troque para um modelo maior

@@ -19,7 +19,7 @@ A economia vem de três lugares: a spec enxuta (o executor não recebe conversa 
 3. Login (uma vez): `npx @anthropic-ai/claude-code /login`
 4. Cadastre cada projeto: `npm run novo-projeto -- <caminho-ou-url-do-github> <porta>`
 5. Preencha o `CLAUDE.md` e o `.mcp.json` que o passo 4 criou em cada projeto
-6. Cole o **Protocolo Fable** ([docs/CLAUDE-FABLE.md](docs/CLAUDE-FABLE.md)) em `~/.claude/CLAUDE.md`
+6. Instale a skill **protocolo-fable** globalmente (vale para qualquer projeto): `npm run instalar-skill` ([entenda em docs/CLAUDE-FABLE.md](docs/CLAUDE-FABLE.md))
 7. `npm start` → http://localhost:4000
 
 ## Instalação

@@ -36,7 +36,7 @@
 - [ex.: NÃO alterar as migrations em supabase/migrations manualmente]
 - [ex.: variáveis de ambiente ficam em .env.local, nunca commitar]
 
-<!-- Dica: cole aqui embaixo o "Protocolo de trabalho" de docs/CLAUDE-FABLE.md
-     (do repositório do Motor IA) — ele faz o executor trabalhar com o método
-     do Fable 5 gastando menos tokens. Ou coloque uma vez só em
-     ~/.claude/CLAUDE.md para valer em todos os projetos. -->
+## Método de trabalho
+
+- Antes da primeira edição de código em qualquer tarefa, use a skill
+  `protocolo-fable` e siga o protocolo durante toda a tarefa.

@@ -95,6 +95,17 @@ for (const [tpl, dest] of seeds) {
   }
 }
 
+// 5. instala a skill protocolo-fable no projeto (.claude/skills/)
+const skillSrc = path.join(ROOT, 'skills', 'protocolo-fable', 'SKILL.md');
+const skillDestDir = path.join(projectPath, '.claude', 'skills', 'protocolo-fable');
+if (fs.existsSync(path.join(skillDestDir, 'SKILL.md'))) {
+  console.log('• skill protocolo-fable já existe no projeto — mantida.');
+} else {
+  fs.mkdirSync(skillDestDir, { recursive: true });
+  fs.copyFileSync(skillSrc, path.join(skillDestDir, 'SKILL.md'));
+  console.log('✅ skill protocolo-fable instalada em .claude/skills/ (método de trabalho do Fable 5).');
+}
+
 console.log(`
 Próximos passos:
   1. Edite ${path.join(projectPath, 'CLAUDE.md')} (stack, estrutura, comandos, cuidados)
