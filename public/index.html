@@ -60,6 +60,16 @@
 </header>
 <main>
 
+  <!-- PRIMEIRO USO -->
+  <section class="panel hidden" id="onboarding">
+    <h2>👋 Bem-vindo — falta só cadastrar seu primeiro projeto</h2>
+    <p>No terminal, dentro da pasta do motor, rode:</p>
+    <pre style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto">npm run novo-projeto -- https://github.com/voce/seu-app 3000
+<span class="muted"># ou um caminho local: npm run novo-projeto -- /caminho/do/projeto 3000</span></pre>
+    <p class="muted">Depois preencha o CLAUDE.md e o .mcp.json criados no projeto e recarregue esta página.
+    Se ainda não fez login com sua assinatura: <code>npx @anthropic-ai/claude-code /login</code></p>
+  </section>
+
   <!-- PASSO 1: pedido -->
   <section class="panel" id="step1">
     <h2>Descreva a melhoria</h2>
@@ -121,6 +131,8 @@ async function loadProjects() {
   const data = await res.json();
   projects = data.projects;
   authMode = data.authMode || 'api';
+  document.getElementById('onboarding').classList.toggle('hidden', !data.firstRun);
+  document.getElementById('step1').classList.toggle('hidden', !!data.firstRun);
   const sel = document.getElementById('project');
   sel.innerHTML = projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
 }

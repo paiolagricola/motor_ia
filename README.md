@@ -12,24 +12,26 @@ Motor de orquestração para desenvolver várias aplicações economizando tempo
 
 A economia vem de três lugares: a spec enxuta (o executor não recebe conversa solta nem planilha inteira), o `CLAUDE.md` de cada projeto (o Claude Code não redescobre o projeto a cada sessão) e o cache de prompt automático do Claude Code.
 
-## Primeiros passos (checklist)
-
-1. `npm install`
-2. `cp .env.example .env` — deixe `ANTHROPIC_API_KEY` vazio para usar sua assinatura
-3. Login (uma vez): `npx @anthropic-ai/claude-code /login`
-4. Cadastre cada projeto: `npm run novo-projeto -- <caminho-ou-url-do-github> <porta>`
-5. Preencha o `CLAUDE.md` e o `.mcp.json` que o passo 4 criou em cada projeto
-6. Instale a skill **protocolo-fable** globalmente (vale para qualquer projeto): `npm run instalar-skill` ([entenda em docs/CLAUDE-FABLE.md](docs/CLAUDE-FABLE.md))
-7. `npm start` → http://localhost:4000
-
-## Instalação
+## Começar a usar (4 comandos)
 
 ```bash
+git clone https://github.com/paiolagricola/motor_ia.git && cd motor_ia
 npm install
-cp .env.example .env
-cp config/projects.example.json config/projects.json   # cadastre seus projetos
-npm start                   # abre em http://localhost:4000
+npx @anthropic-ai/claude-code /login    # uma vez — usa sua assinatura Claude
+npm start                               # → http://localhost:4000
 ```
+
+O `npm start` se auto-configura na primeira execução: cria o `.env` (modo
+assinatura), cria a lista de projetos e instala a skill **protocolo-fable**
+globalmente ([entenda em docs/CLAUDE-FABLE.md](docs/CLAUDE-FABLE.md)). O painel
+então te guia para cadastrar o primeiro projeto:
+
+```bash
+npm run novo-projeto -- https://github.com/voce/seu-app 3000
+```
+
+Depois preencha o `CLAUDE.md` e o `.mcp.json` criados dentro do projeto —
+e pronto: descreva a primeira melhoria no painel.
 
 Requisitos: Node.js 18+ e uma conta Claude — assinatura (Pro/Max) **ou** chave da API.
 

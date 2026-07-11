@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +19,33 @@ app.use(express.static(path.join(ROOT, 'public')));
 
 const upload = multer({ dest: path.join(ROOT, 'uploads'), limits: { fileSize: 25 * 1024 * 1024 } });
 
+// ---------- primeira execução: auto-configuração ----------
+
+function bootstrap() {
+  // .env a partir do exemplo (modo assinatura por padrão)
+  const envPath = path.join(ROOT, '.env');
+  if (!fs.existsSync(envPath)) {
+    fs.copyFileSync(path.join(ROOT, '.env.example'), envPath);
+    console.log('🧰 .env criado (modo assinatura por padrão).');
+  }
+  // lista de projetos
+  const projectsPath = path.join(ROOT, 'config', 'projects.json');
+  if (!fs.existsSync(projectsPath)) {
+    fs.writeFileSync(projectsPath, JSON.stringify({ projects: [] }, null, 2) + '\n');
+    console.log('🧰 config/projects.json criado — cadastre projetos com: npm run novo-projeto');
+  }
+  // skill protocolo-fable global (idempotente)
+  try {
+    const skillDir = path.join(os.homedir(), '.claude', 'skills', 'protocolo-fable');
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.copyFileSync(
+      path.join(ROOT, 'skills', 'protocolo-fable', 'SKILL.md'),
+      path.join(skillDir, 'SKILL.md')
+    );
+  } catch { /* sem permissão de home: segue sem a skill global */ }
+}
+bootstrap();
+
 // ---------- projetos ----------
 
 function loadProjects() {
@@ -32,9 +60,11 @@ function getProject(id) {
 }
 
 app.get('/api/projects', (_req, res) => {
+  const projects = loadProjects();
   res.json({
     authMode: AUTH_MODE,
-    projects: loadProjects().map(({ id, name, previewUrl }) => ({ id, name, previewUrl })),
+    firstRun: projects.length === 0,
+    projects: projects.map(({ id, name, previewUrl }) => ({ id, name, previewUrl })),
   });
 });
 
