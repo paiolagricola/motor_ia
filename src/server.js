@@ -6,7 +6,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { structureRequest, specToPrompt } from './structurer.js';
+import { structureRequest, specToPrompt, AUTH_MODE } from './structurer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -32,7 +32,10 @@ function getProject(id) {
 }
 
 app.get('/api/projects', (_req, res) => {
-  res.json({ projects: loadProjects().map(({ id, name, previewUrl }) => ({ id, name, previewUrl })) });
+  res.json({
+    authMode: AUTH_MODE,
+    projects: loadProjects().map(({ id, name, previewUrl }) => ({ id, name, previewUrl })),
+  });
 });
 
 // ---------- passo 1: estruturar o pedido ----------
@@ -97,6 +100,7 @@ app.post('/api/execute', async (req, res) => {
           cost: message.total_cost_usd ?? null,
           duration: message.duration_ms ?? null,
           sessionId: message.session_id,
+          authMode: AUTH_MODE,
         });
       }
     }
@@ -147,7 +151,10 @@ app.post('/api/preview/:id/stop', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`⚙️  Motor IA rodando em http://localhost:${PORT}`);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn('⚠️  ANTHROPIC_API_KEY não definida — configure o .env antes de usar.');
+  if (AUTH_MODE === 'assinatura') {
+    console.log('🔑 Modo assinatura: usando o login do Claude Code (sem cobrança por token).');
+    console.log('   Se ainda não fez login, rode: npx @anthropic-ai/claude-code /login');
+  } else {
+    console.log('🔑 Modo API: usando ANTHROPIC_API_KEY (cobrança por token).');
   }
 });

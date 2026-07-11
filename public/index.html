@@ -107,6 +107,7 @@
 <script>
 let currentSpec = null;
 let projects = [];
+let authMode = 'api';
 
 function goto(n) {
   for (const i of [1, 2, 3]) {
@@ -117,7 +118,9 @@ function goto(n) {
 
 async function loadProjects() {
   const res = await fetch('/api/projects');
-  projects = (await res.json()).projects;
+  const data = await res.json();
+  projects = data.projects;
+  authMode = data.authMode || 'api';
   const sel = document.getElementById('project');
   sel.innerHTML = projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
 }
@@ -146,8 +149,11 @@ document.getElementById('btn-structure').addEventListener('click', async () => {
     const data = await res.json();
     currentSpec = data.spec;
     fillSpec(data.spec);
+    const tok = data.usage.input_tokens != null
+      ? `${data.usage.input_tokens}↓ ${data.usage.output_tokens}↑ tokens`
+      : 'tokens n/d';
     document.getElementById('spec-cost').textContent =
-      `estruturador: ${data.usage.input_tokens}↓ ${data.usage.output_tokens}↑ tokens`;
+      `estruturador: ${tok}` + (authMode === 'assinatura' ? ' (assinatura)' : '');
     goto(2);
   } catch (err) {
     alert('Erro ao estruturar: ' + err.message);
@@ -222,7 +228,11 @@ document.getElementById('btn-execute').addEventListener('click', async () => {
       if (ev.type === 'tool') logLine('tool', '🔧 ' + ev.text);
       else if (ev.type === 'text') logLine('text', ev.text);
       else if (ev.type === 'done') {
-        logLine('done', `✅ Concluído. Custo: ${ev.cost != null ? '$' + ev.cost.toFixed(4) : 'n/d'} · ${ev.duration ? Math.round(ev.duration / 1000) + 's' : ''}`);
+        const custo = ev.cost != null ? '$' + ev.cost.toFixed(4) : 'n/d';
+        const rotulo = (ev.authMode || authMode) === 'assinatura'
+          ? `uso equivalente a ${custo} — coberto pela sua assinatura, sem cobrança extra`
+          : `custo: ${custo}`;
+        logLine('done', `✅ Concluído. ${rotulo} · ${ev.duration ? Math.round(ev.duration / 1000) + 's' : ''}`);
         document.getElementById('btn-preview').disabled = false;
       }
       else if (ev.type === 'error') logLine('err', '❌ ' + ev.text);

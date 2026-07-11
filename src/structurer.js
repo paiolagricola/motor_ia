@@ -1,16 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
 import fs from 'node:fs';
 import path from 'node:path';
+import { query } from '@anthropic-ai/claude-agent-sdk';
 import * as XLSXmod from 'xlsx';
 
 const XLSX = XLSXmod.default ?? XLSXmod;
 
-const client = new Anthropic();
+// Com ANTHROPIC_API_KEY definida, o estruturador chama a API direto (paga por
+// token, mas centavos no Haiku). Sem a chave, tudo roda pelo Claude Code com o
+// login da assinatura — sem cobrança extra.
+export const AUTH_MODE = process.env.ANTHROPIC_API_KEY ? 'api' : 'assinatura';
 
 const STRUCTURER_MODEL = process.env.STRUCTURER_MODEL || 'claude-haiku-4-5';
 
-// Schema da spec que o Claude Code vai receber. Campos em português para
-// bater com a UI; a spec final é renderizada como markdown enxuto.
 const SPEC_SCHEMA = {
   type: 'object',
   properties: {
@@ -74,78 +75,118 @@ function sheetToText(filePath, maxChars = 20000) {
   return out;
 }
 
-// Monta os blocos de conteúdo (texto + imagens + documentos) a partir dos anexos
-function buildContentBlocks(userText, files, projectInfo) {
-  const blocks = [];
-
+function classifyFiles(files) {
+  const visual = []; // imagens e PDFs — viram blocos (API) ou leitura via Read (assinatura)
+  const textual = []; // planilhas e textos — sempre inline como texto
   for (const file of files) {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (IMAGE_TYPES[ext]) {
-      blocks.push({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: IMAGE_TYPES[ext],
-          data: fs.readFileSync(file.path).toString('base64'),
-        },
-      });
-    } else if (ext === '.pdf') {
-      blocks.push({
-        type: 'document',
-        source: {
-          type: 'base64',
-          media_type: 'application/pdf',
-          data: fs.readFileSync(file.path).toString('base64'),
-        },
-      });
+    if (IMAGE_TYPES[ext] || ext === '.pdf') {
+      visual.push({ file, ext });
     } else if (SHEET_TYPES.has(ext)) {
-      blocks.push({
-        type: 'text',
-        text: `Conteúdo da planilha "${file.originalname}":\n${sheetToText(file.path)}`,
-      });
+      textual.push({ name: file.originalname, text: sheetToText(file.path) });
     } else {
-      // arquivos de texto genéricos (md, txt, json...)
-      const raw = fs.readFileSync(file.path, 'utf8').slice(0, 20000);
-      blocks.push({ type: 'text', text: `Conteúdo do arquivo "${file.originalname}":\n${raw}` });
+      textual.push({ name: file.originalname, text: fs.readFileSync(file.path, 'utf8').slice(0, 20000) });
     }
   }
-
-  let text = '';
-  if (projectInfo) {
-    text += `Projeto alvo: ${projectInfo.name} (stack/observações: ${projectInfo.notes || 'não informado'})\n\n`;
-  }
-  text += `Pedido do usuário:\n${userText}`;
-  blocks.push({ type: 'text', text });
-
-  return blocks;
+  return { visual, textual };
 }
 
-/**
- * Transforma o pedido em linguagem natural + anexos numa spec estruturada.
- * @returns {Promise<object>} spec validada contra SPEC_SCHEMA
- */
-export async function structureRequest(userText, files = [], projectInfo = null) {
+function basePrompt(userText, textual, projectInfo) {
+  let out = '';
+  if (projectInfo) {
+    out += `Projeto alvo: ${projectInfo.name} (stack/observações: ${projectInfo.notes || 'não informado'})\n\n`;
+  }
+  for (const t of textual) {
+    out += `Conteúdo do arquivo "${t.name}":\n${t.text}\n\n`;
+  }
+  out += `Pedido do usuário:\n${userText}`;
+  return out;
+}
+
+// ---------- modo API (chave ANTHROPIC_API_KEY): saída JSON validada ----------
+
+async function structureViaApi(userText, files, projectInfo) {
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const client = new Anthropic();
+  const { visual, textual } = classifyFiles(files);
+
+  const blocks = visual.map(({ file, ext }) =>
+    ext === '.pdf'
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: fs.readFileSync(file.path).toString('base64') } }
+      : { type: 'image', source: { type: 'base64', media_type: IMAGE_TYPES[ext], data: fs.readFileSync(file.path).toString('base64') } }
+  );
+  blocks.push({ type: 'text', text: basePrompt(userText, textual, projectInfo) });
+
   const response = await client.messages.create({
     model: STRUCTURER_MODEL,
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
-    output_config: {
-      format: { type: 'json_schema', schema: SPEC_SCHEMA },
-    },
-    messages: [
-      { role: 'user', content: buildContentBlocks(userText, files, projectInfo) },
-    ],
+    output_config: { format: { type: 'json_schema', schema: SPEC_SCHEMA } },
+    messages: [{ role: 'user', content: blocks }],
   });
 
   const text = response.content.find((b) => b.type === 'text')?.text ?? '{}';
-  const spec = JSON.parse(text);
   return {
-    spec,
+    spec: JSON.parse(text),
     usage: {
       input_tokens: response.usage.input_tokens,
       output_tokens: response.usage.output_tokens,
     },
   };
+}
+
+// ---------- modo assinatura: estrutura via Claude Code (login da conta) ----------
+
+async function structureViaSubscription(userText, files, projectInfo) {
+  const { visual, textual } = classifyFiles(files);
+
+  let prompt = SYSTEM_PROMPT + '\n\n';
+  if (visual.length) {
+    prompt += 'Antes de escrever a spec, leia estes anexos com a ferramenta Read:\n';
+    prompt += visual.map(({ file }) => `- ${path.resolve(file.path)} (original: ${file.originalname})`).join('\n');
+    prompt += '\n\n';
+  }
+  prompt += basePrompt(userText, textual, projectInfo);
+  prompt +=
+    '\n\nResponda SOMENTE com um objeto JSON válido (sem markdown, sem cercas de código) com exatamente estas chaves: ' +
+    'titulo (string), objetivo (string), contexto (string), mudancas (array de strings), ' +
+    'fora_do_escopo (array de strings), criterios_de_aceite (array de strings), perguntas_abertas (array de strings).';
+
+  let finalText = '';
+  let usage = {};
+  for await (const message of query({
+    prompt,
+    options: {
+      allowedTools: ['Read'],
+      permissionMode: 'acceptEdits',
+      maxTurns: 10,
+      ...(process.env.STRUCTURER_MODEL ? { model: process.env.STRUCTURER_MODEL } : {}),
+    },
+  })) {
+    if (message.type === 'result') {
+      finalText = message.result ?? '';
+      usage = {
+        input_tokens: message.usage?.input_tokens ?? null,
+        output_tokens: message.usage?.output_tokens ?? null,
+      };
+    }
+  }
+
+  // extrai o objeto JSON da resposta (tolerante a texto em volta)
+  const start = finalText.indexOf('{');
+  const end = finalText.lastIndexOf('}');
+  if (start < 0 || end < 0) throw new Error('O estruturador não retornou JSON: ' + finalText.slice(0, 300));
+  const spec = JSON.parse(finalText.slice(start, end + 1));
+  return { spec, usage };
+}
+
+/**
+ * Transforma o pedido em linguagem natural + anexos numa spec estruturada.
+ */
+export async function structureRequest(userText, files = [], projectInfo = null) {
+  return AUTH_MODE === 'api'
+    ? structureViaApi(userText, files, projectInfo)
+    : structureViaSubscription(userText, files, projectInfo);
 }
 
 /**

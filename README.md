@@ -16,12 +16,21 @@ A economia vem de três lugares: a spec enxuta (o executor não recebe conversa 
 
 ```bash
 npm install
-cp .env.example .env        # preencha a ANTHROPIC_API_KEY
+cp .env.example .env
 cp config/projects.example.json config/projects.json   # cadastre seus projetos
 npm start                   # abre em http://localhost:4000
 ```
 
-Requisitos: Node.js 18+ e uma chave da API da Anthropic (https://console.anthropic.com).
+Requisitos: Node.js 18+ e uma conta Claude — assinatura (Pro/Max) **ou** chave da API.
+
+### Autenticação: assinatura ou API?
+
+| Modo | Como ativar | Cobrança |
+|---|---|---|
+| **Assinatura** (Pro/Max) | Deixe `ANTHROPIC_API_KEY` vazio no `.env` e rode `npx @anthropic-ai/claude-code /login` uma vez | Nenhuma além da mensalidade — usa os limites do seu plano. Os valores em $ no painel são só informativos. |
+| **API** | Preencha `ANTHROPIC_API_KEY` no `.env` | Por token usado. O estruturador usa Haiku (centavos); o painel mostra o custo real de cada execução. |
+
+Se você já tem assinatura, use o modo assinatura — é o mais econômico.
 
 ## Cadastrando um projeto
 
@@ -63,11 +72,12 @@ toda execução; com ele, vai direto ao ponto.
 
 | Papel | Modelo padrão | Onde mudar |
 |---|---|---|
-| Estruturador (pedido → spec) | `claude-haiku-4-5` (barato) | `STRUCTURER_MODEL` no `.env` |
+| Estruturador (pedido → spec) | modo API: `claude-haiku-4-5` · modo assinatura: padrão do plano | `STRUCTURER_MODEL` no `.env` |
 | Executor (Claude Code) | padrão do Claude Code | `EXECUTOR_MODEL` no `.env` |
 
-O painel mostra os tokens do estruturador em cada spec e o custo em dólares
-de cada execução ao final.
+O painel mostra os tokens do estruturador em cada spec e, ao final de cada
+execução, o uso em dólares — que no modo assinatura é apenas informativo
+(sem cobrança extra).
 
 ## Segurança
 
