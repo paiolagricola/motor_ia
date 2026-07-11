@@ -12,6 +12,16 @@ Motor de orquestração para desenvolver várias aplicações economizando tempo
 
 A economia vem de três lugares: a spec enxuta (o executor não recebe conversa solta nem planilha inteira), o `CLAUDE.md` de cada projeto (o Claude Code não redescobre o projeto a cada sessão) e o cache de prompt automático do Claude Code.
 
+## Primeiros passos (checklist)
+
+1. `npm install`
+2. `cp .env.example .env` — deixe `ANTHROPIC_API_KEY` vazio para usar sua assinatura
+3. Login (uma vez): `npx @anthropic-ai/claude-code /login`
+4. Cadastre cada projeto: `npm run novo-projeto -- <caminho-ou-url-do-github> <porta>`
+5. Preencha o `CLAUDE.md` e o `.mcp.json` que o passo 4 criou em cada projeto
+6. Cole o **Protocolo Fable** ([docs/CLAUDE-FABLE.md](docs/CLAUDE-FABLE.md)) em `~/.claude/CLAUDE.md`
+7. `npm start` → http://localhost:4000
+
 ## Instalação
 
 ```bash
@@ -34,7 +44,17 @@ Se você já tem assinatura, use o modo assinatura — é o mais econômico.
 
 ## Cadastrando um projeto
 
-Edite `config/projects.json`:
+O jeito rápido — funciona com caminho local **ou** URL do GitHub (clona sozinho):
+
+```bash
+npm run novo-projeto -- /home/voce/repos/meu-app 3000
+npm run novo-projeto -- https://github.com/voce/meu-app 3000
+```
+
+O script registra o projeto, detecta o comando de dev e cria `CLAUDE.md` e
+`.mcp.json` a partir dos templates se o projeto ainda não tiver — só preencher.
+
+Ou edite `config/projects.json` na mão:
 
 ```json
 {
