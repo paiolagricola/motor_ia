@@ -103,6 +103,14 @@ Copie `templates/CLAUDE.md.template` para a raiz de cada projeto e preencha.
 Sem ele, o Claude Code gasta tokens redescobrindo a estrutura do projeto em
 toda execução; com ele, vai direto ao ponto.
 
+## Integração Energisa (faturas + energia injetada)
+
+O motor consulta todo mês a Agência Digital da Energisa, baixa as faturas em
+aberto e extrai dos PDFs o valor, vencimento, consumo, **energia injetada**
+(geração solar) e saldo de créditos. Configure `ENERGISA_CPF_CNPJ` e
+`ENERGISA_SENHA` no `.env` e pronto — ou consulte na hora com dois cliques em
+`energisa.bat` / `energisa.command`. Detalhes em [docs/ENERGISA.md](docs/ENERGISA.md).
+
 ## Modelos e custo
 
 | Papel | Modelo padrão | Onde mudar |

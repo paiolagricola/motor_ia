@@ -8,6 +8,8 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { structureRequest, specToPrompt, AUTH_MODE } from './structurer.js';
+import { agendarConsultaMensal } from './energisa/agendador.js';
+import { consultarEnergisa, DIR_DADOS as ENERGISA_DIR } from './energisa/consultar.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -178,6 +180,33 @@ app.post('/api/preview/:id/stop', (req, res) => {
   if (child) child.kill('SIGTERM');
   res.json({ stopped: Boolean(child) });
 });
+
+// ---------- integração Energisa (faturas em aberto + energia injetada) ----------
+
+app.get('/api/energisa/historico', (_req, res) => {
+  const p = path.join(ENERGISA_DIR, 'historico.json');
+  if (!fs.existsSync(p)) {
+    return res.json({ configurado: Boolean(process.env.ENERGISA_CPF_CNPJ), consultas: [], faturas: [] });
+  }
+  res.json({ configurado: true, ...JSON.parse(fs.readFileSync(p, 'utf8')) });
+});
+
+let consultaEnergisaEmAndamento = null;
+app.post('/api/energisa/consultar', async (_req, res) => {
+  if (consultaEnergisaEmAndamento) {
+    return res.status(409).json({ error: 'Já existe uma consulta em andamento.' });
+  }
+  consultaEnergisaEmAndamento = consultarEnergisa()
+    .finally(() => { consultaEnergisaEmAndamento = null; });
+  try {
+    const { faturas, relatorio } = await consultaEnergisaEmAndamento;
+    res.json({ faturas, relatorio });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+agendarConsultaMensal();
 
 app.listen(PORT, () => {
   console.log(`⚙️  Motor IA rodando em http://localhost:${PORT}`);
